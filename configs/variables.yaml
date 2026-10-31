@@ -1,0 +1,15 @@
+world_bank:
+  brent: ["Crude oil, Brent", "Crude Oil, Brent"]
+  corn: ["Maize", "Corn"]
+  wheat: ["Wheat"]
+  soybean: ["Soybeans", "Soybean"]
+  copper: ["Copper"]
+  aluminum: ["Aluminum"]
+  gold: ["Gold"]
+  silver: ["Silver"]
+
+fred:
+  cpi: CPIAUCSL
+  usd: DTWEXBGS
+  rate: DGS10
+  ip: INDPRO
