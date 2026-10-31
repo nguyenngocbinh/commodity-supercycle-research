@@ -1,0 +1,36 @@
+name: Monthly commodity research
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 2 5 * *"
+
+permissions:
+  contents: read
+
+jobs:
+  update-research:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Extract and analyze
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          START_DATE: "2000-01-01"
+        run: |
+          python -m src.data.pipeline
+          python -m src.econometrics.run_analysis
+      - name: Upload research outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: commodity-research-${{ github.run_id }}
+          path: |
+            reports/
+            data/processed/
+          if-no-files-found: error
+          retention-days: 90
