@@ -1,0 +1,14 @@
+start_date: "2000-01-01"
+frequency: "MS"
+rolling_window: 60
+max_var_lags: 12
+irf_periods: 24
+baseline_cholesky_order:
+  - OIL
+  - FOOD
+  - METALS
+  - PRECIOUS
+  - CPI
+  - USD
+  - RATE
+  - IP
