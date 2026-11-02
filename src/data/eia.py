@@ -26,16 +26,25 @@ def download_eia_monthly(
         raise RuntimeError("EIA_API_KEY is missing. Register for a free key at https://www.eia.gov/opendata/register.php")
     frames = []
     for column, series_id in (series or DEFAULT_SERIES).items():
-        response = requests.get(
-            f"{BASE_URL}/{series_id}",
-            params={"api_key": api_key, "length": 5000},
-            timeout=90,
-        )
-        response.raise_for_status()
-        payload = response.json()
+        try:
+            response = requests.get(
+                f"{BASE_URL}/{series_id}",
+                params={"api_key": api_key, "length": 5000},
+                timeout=90,
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except requests.RequestException as exc:
+            # Never propagate request URLs: the EIA key is passed as a query parameter.
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            detail = f"HTTP {status}" if status else type(exc).__name__
+            raise RuntimeError(f"EIA request failed for {series_id}: {detail}") from None
+        except ValueError:
+            raise RuntimeError(f"EIA returned invalid JSON for {series_id}.") from None
+
         rows = payload.get("response", {}).get("data", [])
         if not rows:
-            raise RuntimeError(f"EIA returned no observations for {series_id}: {payload.get('error', 'no data')}")
+            raise RuntimeError(f"EIA returned no observations for {series_id}.")
         frame = pd.DataFrame(rows)
         if not {"period", "value"}.issubset(frame.columns):
             raise ValueError(f"Unexpected EIA schema for {series_id}: {list(frame.columns)}")
