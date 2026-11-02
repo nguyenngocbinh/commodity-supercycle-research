@@ -25,13 +25,15 @@ def _parse_xml(content: bytes, column: str) -> pd.DataFrame:
     for obs in root.iter():
         if _local_name(obs.tag) != "Obs":
             continue
-        period = value = None
+        attrs = {str(k).upper(): v for k, v in obs.attrib.items()}
+        period = attrs.get("TIME_PERIOD")
+        value = attrs.get("OBS_VALUE")
         for child in obs.iter():
             name = _local_name(child.tag)
             if name == "ObsDimension":
-                period = child.attrib.get("value")
+                period = child.attrib.get("value", period)
             elif name == "ObsValue":
-                value = child.attrib.get("value")
+                value = child.attrib.get("value", value)
         if period and value not in (None, ""):
             rows.append((period, value))
     if not rows:
@@ -81,7 +83,10 @@ def download_pcps(
             timeout=90,
         )
         response.raise_for_status()
-        frames.append(_parse_response(response, column))
+        frame = _parse_response(response, column)
+        if frame.empty:
+            raise RuntimeError(f"IMF returned no observations for PCPS indicator {indicator}.")
+        frames.append(frame)
     if not frames:
         raise RuntimeError("No IMF PCPS indicators configured.")
     result = pd.concat(frames, axis=1).sort_index()
