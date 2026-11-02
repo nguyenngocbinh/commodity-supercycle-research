@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from src.features.transformations import log_change, build_model_data
+from src.features.transformations import build_model_data, log_change
 
 
 def test_log_change():
