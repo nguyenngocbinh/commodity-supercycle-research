@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
 from io import StringIO
 from pathlib import Path
-import xml.etree.ElementTree as ET
 
 import pandas as pd
 import requests
