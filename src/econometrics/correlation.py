@@ -18,10 +18,12 @@ def run_correlations(data: pd.DataFrame, window: int = 60) -> None:
     plt.savefig("reports/figures/correlation_heatmap.png", dpi=160)
     plt.close()
 
-    pairs = [("OIL", "FOOD"), ("OIL", "METALS"), ("OIL", "PRECIOUS"), ("OIL", "CPI")]
-    rolling = pd.DataFrame({f"{a}_{b}": data[a].rolling(window).corr(data[b]) for a, b in pairs})
-    rolling.to_csv("reports/research/rolling_correlations.csv")
-    rolling.plot(figsize=(12, 5), title=f"{window}-month rolling correlation")
-    plt.tight_layout()
-    plt.savefig("reports/figures/rolling_correlations.png", dpi=160)
-    plt.close()
+    candidate_pairs = [("OIL", "FOOD"), ("OIL", "METALS"), ("OIL", "PRECIOUS"), ("OIL", "CPI")]
+    pairs = [(a, b) for a, b in candidate_pairs if a in data.columns and b in data.columns]
+    if pairs:
+        rolling = pd.DataFrame({f"{a}_{b}": data[a].rolling(window).corr(data[b]) for a, b in pairs})
+        rolling.to_csv("reports/research/rolling_correlations.csv")
+        rolling.plot(figsize=(12, 5), title=f"{window}-month rolling correlation")
+        plt.tight_layout()
+        plt.savefig("reports/figures/rolling_correlations.png", dpi=160)
+        plt.close()
