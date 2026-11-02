@@ -10,7 +10,7 @@ from src.econometrics.correlation import run_correlations
 from src.features.stationarity import stationarity_report
 from src.features.transformations import build_model_data
 
-ORDER = ["OIL", "FOOD", "METALS", "PRECIOUS", "CPI", "USD", "RATE", "IP"]
+PREFERRED_ORDER = ["OIL", "FOOD", "METALS", "PRECIOUS", "CPI", "USD", "RATE", "IP"]
 
 
 def main():
@@ -19,27 +19,41 @@ def main():
     levels = pd.read_csv("data/processed/monthly_levels.csv", index_col=0, parse_dates=True)
     model_data = build_model_data(levels)
     model_data.to_csv("data/processed/model_data.csv")
+
+    if "OIL" not in model_data.columns or len(model_data.columns) < 2:
+        raise RuntimeError("At least two model variables including OIL are required for VAR analysis.")
+
+    order = [name for name in PREFERRED_ORDER if name in model_data.columns]
+    model_data = model_data[order].dropna()
+    if len(model_data) < 36:
+        raise RuntimeError(f"Insufficient monthly observations for VAR: {len(model_data)}")
     stationarity_report(model_data).to_csv("reports/research/stationarity.csv")
     run_correlations(model_data)
 
-    model_data = model_data[ORDER].dropna()
-    selection = VAR(model_data).select_order(maxlags=12)
+    max_lags = min(12, max(1, len(model_data) // (len(order) ** 2 + 1)))
+    selection = VAR(model_data).select_order(maxlags=max_lags)
     lag = max(1, int(selection.selected_orders.get("aic") or 1))
     fitted = VAR(model_data).fit(lag, trend="c")
     Path("reports/research/var_summary.txt").write_text(str(fitted.summary()), encoding="utf-8")
     Path("reports/research/lag_selection.txt").write_text(str(selection.summary()), encoding="utf-8")
 
     diagnostics = {
-        "selected_lag_aic": lag, "is_stable": bool(fitted.is_stable()),
-        "nobs": int(fitted.nobs), "start": str(model_data.index.min().date()),
+        "variables": order,
+        "selected_lag_aic": lag,
+        "is_stable": bool(fitted.is_stable()),
+        "nobs": int(fitted.nobs),
+        "start": str(model_data.index.min().date()),
         "end": str(model_data.index.max().date()),
+        "max_lags_tested": max_lags,
     }
     Path("reports/research/var_diagnostics.json").write_text(
         json.dumps(diagnostics, indent=2), encoding="utf-8"
     )
 
     rows = []
-    for caused in ORDER[1:]:
+    for caused in order:
+        if caused == "OIL":
+            continue
         test = fitted.test_causality(caused=caused, causing=["OIL"], kind="f")
         rows.append({
             "cause": "OIL", "effect": caused, "statistic": float(test.test_statistic),
@@ -57,15 +71,15 @@ def main():
 
     fevd = fitted.fevd(24)
     fevd_rows = []
-    for i, variable in enumerate(ORDER):
+    for i, variable in enumerate(order):
         for h in range(24):
-            for j, shock in enumerate(ORDER):
+            for j, shock in enumerate(order):
                 fevd_rows.append({
                     "variable": variable, "horizon": h + 1, "shock": shock,
                     "share": float(fevd.decomp[i, h, j]),
                 })
     pd.DataFrame(fevd_rows).to_csv("reports/research/fevd.csv", index=False)
-    print(f"Analysis complete. VAR({lag}); stable={fitted.is_stable()}; nobs={fitted.nobs}")
+    print(f"Analysis complete. VAR({lag}); stable={fitted.is_stable()}; nobs={fitted.nobs}; variables={order}")
 
 
 if __name__ == "__main__":
