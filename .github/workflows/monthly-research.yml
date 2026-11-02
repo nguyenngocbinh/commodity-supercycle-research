@@ -11,17 +11,20 @@ permissions:
 jobs:
   update-research:
     runs-on: ubuntu-latest
+    environment: commodity-research
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
-      - run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
       - name: Extract and analyze
         env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
           START_DATE: "2000-01-01"
+          REQUIRE_ALL_SOURCES: "false"
         run: |
           python -m src.data.pipeline
           python -m src.econometrics.run_analysis
@@ -33,4 +36,4 @@ jobs:
             reports/
             data/processed/
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 30
