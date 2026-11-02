@@ -8,10 +8,10 @@ import requests
 from dotenv import load_dotenv
 
 BASE_URL = "https://api.eia.gov/v2/seriesid"
-# US monthly measures; they must not be described as global totals.
+# US series only. Weekly stocks are converted to month-end observations.
 DEFAULT_SERIES = {
     "eia_us_crude_oil_field_production": "PET.MCRFPUS2.M",
-    "eia_us_crude_oil_stocks": "PET.MCESTUS1.M",
+    "eia_us_crude_oil_stocks": "PET.WCESTUS1.W",
 }
 
 
@@ -41,9 +41,13 @@ def download_eia_monthly(
             raise ValueError(f"Unexpected EIA schema for {series_id}: {list(frame.columns)}")
         frame["date"] = pd.to_datetime(frame["period"], errors="coerce")
         frame[column] = pd.to_numeric(frame["value"], errors="coerce")
-        frames.append(frame.dropna(subset=["date"]).set_index("date")[[column]])
+        series_frame = frame.dropna(subset=["date"]).set_index("date")[[column]].sort_index()
+        if series_id.endswith(".W"):
+            # Month-end stock: retain the last available weekly observation in each month.
+            series_frame = series_frame.resample("ME").last()
+        series_frame.index = series_frame.index.to_period("M").to_timestamp()
+        frames.append(series_frame)
     result = pd.concat(frames, axis=1).sort_index()
-    result.index = result.index.to_period("M").to_timestamp()
     result = result.loc[pd.Timestamp(start_date):]
     result.index.name = "date"
     out = Path(output_dir)
