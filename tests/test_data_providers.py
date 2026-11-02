@@ -1,5 +1,5 @@
-import requests
 import pandas as pd
+import requests
 
 from src.data.imf import _parse_response
 
