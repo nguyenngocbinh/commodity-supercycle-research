@@ -43,7 +43,7 @@ def _select_world_bank_columns(wb: pd.DataFrame, aliases: dict[str, list[str]]) 
 def _optional_provider(name: str, loader, required: bool):
     try:
         frame = loader()
-        return frame, {"status": "success", "rows": int(len(frame)), "columns": list(frame.columns)}
+        return frame, {"status": "success", "rows": len(frame), "columns": list(frame.columns)}
     except Exception as exc:
         if required:
             raise
@@ -68,7 +68,7 @@ def build_monthly_dataset(start_date: str | None = None, end_date: str | None = 
         "sources": {
             "world_bank": {
                 "status": "success",
-                "rows": int(len(wb_selected)),
+                "rows": len(wb_selected),
                 "columns": list(wb_selected.columns),
             }
         },
@@ -110,7 +110,7 @@ def build_monthly_dataset(start_date: str | None = None, end_date: str | None = 
     out.mkdir(parents=True, exist_ok=True)
     merged.to_csv(out / "monthly_levels.csv")
     manifest["dataset"] = {
-        "rows": int(len(merged)),
+        "rows": len(merged),
         "columns": list(merged.columns),
         "first_observation": merged.index.min().strftime("%Y-%m-%d") if not merged.empty else None,
         "last_observation": merged.index.max().strftime("%Y-%m-%d") if not merged.empty else None,
