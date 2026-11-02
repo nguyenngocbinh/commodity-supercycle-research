@@ -8,8 +8,16 @@ world_bank:
   gold: ["Gold"]
   silver: ["Silver"]
 
-fred:
-  cpi: CPIAUCSL
-  usd: DTWEXBGS
-  rate: DGS10
-  ip: INDPRO
+imf:
+  enabled: true
+  indicators:
+    imf_brent: "POILBRE"
+    imf_oil_average: "POILAPSP"
+    imf_nonfuel_commodities_index: "PALLFNF"
+
+eia:
+  enabled: true
+  # US monthly series, not global totals.
+  series:
+    eia_us_crude_oil_field_production: "PET.MCRFPUS2.M"
+    eia_us_crude_oil_stocks: "PET.MCESTUS1.M"
