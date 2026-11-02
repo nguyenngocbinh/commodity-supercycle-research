@@ -2,6 +2,7 @@ import pandas as pd
 import requests
 
 from src.data.imf import _parse_response
+from src.data.world_bank import _header_row
 
 
 def test_imf_csv_response_parses_monthly_observations():
@@ -19,3 +20,26 @@ def test_imf_csv_response_parses_monthly_observations():
     assert len(frame) == 2
     assert frame.index[0] == pd.Timestamp("2020-01-01")
     assert frame.iloc[0, 0] == 63.65
+
+
+
+def test_world_bank_header_detection_accepts_period_label():
+    raw = pd.DataFrame(
+        [
+            ["World Bank Pink Sheet", None, None],
+            ["Period", "Crude oil, Brent", "Copper"],
+            ["1960M01", 1.8, 700],
+        ]
+    )
+    assert _header_row(raw) == 1
+
+
+def test_world_bank_header_detection_accepts_month_label():
+    raw = pd.DataFrame(
+        [
+            ["Monthly Prices", None, None],
+            ["Month", "Aluminum", "Gold"],
+            ["1960M01", 2.0, 35.0],
+        ]
+    )
+    assert _header_row(raw) == 1
