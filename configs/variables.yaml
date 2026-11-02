@@ -17,7 +17,7 @@ imf:
 
 eia:
   enabled: true
-  # US monthly series, not global totals.
+  # US measures, not global totals.
   series:
     eia_us_crude_oil_field_production: "PET.MCRFPUS2.M"
-    eia_us_crude_oil_stocks: "PET.MCESTUS1.M"
+    eia_us_crude_oil_stocks: "PET.WCESTUS1.W"
