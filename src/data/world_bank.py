@@ -29,11 +29,37 @@ def discover_monthly_workbook() -> str:
 
 
 def _header_row(raw: pd.DataFrame) -> int:
-    for i in range(min(30, len(raw))):
-        values = " ".join(str(v).lower() for v in raw.iloc[i].tolist())
-        if "date" in values and ("copper" in values or "crude oil" in values):
+    """Find the monthly data header across World Bank workbook vintages."""
+    time_labels = ("date", "period", "month", "time")
+    commodity_labels = (
+        "copper",
+        "crude oil",
+        "brent",
+        "aluminum",
+        "aluminium",
+        "gold",
+        "wheat",
+        "maize",
+        "soybean",
+    )
+    for i in range(min(40, len(raw))):
+        cells = [
+            str(value).strip().lower()
+            for value in raw.iloc[i].tolist()
+            if pd.notna(value)
+        ]
+        values = " ".join(cells)
+        has_time_column = any(
+            cell in time_labels or cell.startswith(("date ", "period ", "month "))
+            for cell in cells[:2]
+        )
+        has_commodity_column = any(label in values for label in commodity_labels)
+        if has_time_column and has_commodity_column:
             return i
-    raise ValueError("Could not locate the header row in World Bank Pink Sheet workbook.")
+    raise ValueError(
+        "Could not locate the monthly header row in World Bank Pink Sheet workbook. "
+        f"Available first rows: {raw.head(8).fillna('').astype(str).values.tolist()}"
+    )
 
 
 def download_monthly_prices(output_dir: str = "data/raw") -> pd.DataFrame:
