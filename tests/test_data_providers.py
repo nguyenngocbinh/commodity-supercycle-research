@@ -43,3 +43,20 @@ def test_world_bank_header_detection_accepts_month_label():
         ]
     )
     assert _header_row(raw) == 1
+
+
+def test_world_bank_header_detection_current_pink_sheet_layout():
+    raw = pd.DataFrame(
+        [
+            ["World Bank Commodity Price Data (The Pink Sheet)", None, None, None],
+            ["monthly prices in nominal US dollars, 1960 to present", None, None, None],
+            ["(monthly series are available only in nominal US dollars)", None, None, None],
+            ["Updated on November 03, 2026", None, None, None],
+            ["", "Crude oil, average", "Crude oil, Brent", "Copper"],
+            ["", "($/bbl)", "($/bbl)", "($/mt)"],
+            ["1960M01", 1.6, 1.6, 715],
+            ["1960M02", 1.6, 1.6, 728],
+        ]
+    )
+    assert _header_row(raw) == 4
+
