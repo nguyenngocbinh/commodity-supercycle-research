@@ -59,7 +59,7 @@ def _header_row(raw: pd.DataFrame) -> int:
     def is_month(value: object) -> bool:
         if pd.isna(value):
             return False
-        return bool(re.fullmatch(r"\\d{4}M\\d{2}", str(value).strip(), flags=re.IGNORECASE))
+        return bool(re.fullmatch(r"\d{4}M\d{2}", str(value).strip(), flags=re.IGNORECASE))
 
     for i in range(min(40, len(raw))):
         row = raw.iloc[i].tolist()
