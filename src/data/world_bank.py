@@ -29,7 +29,15 @@ def discover_monthly_workbook() -> str:
 
 
 def _header_row(raw: pd.DataFrame) -> int:
-    """Find the monthly data header across World Bank workbook vintages."""
+    """Find the monthly commodity header across World Bank workbook vintages.
+
+    Recent Pink Sheet workbooks leave the first header cell blank, put
+    commodity names on the header row, units on the next row, and monthly
+    observations (YYYYMmm) below them. Older workbooks may label the first
+    header cell as Period, Month, Date, or Time.
+    """
+    import re
+
     time_labels = ("date", "period", "month", "time")
     commodity_labels = (
         "copper",
@@ -38,24 +46,49 @@ def _header_row(raw: pd.DataFrame) -> int:
         "aluminum",
         "aluminium",
         "gold",
+        "silver",
         "wheat",
         "maize",
         "soybean",
+        "natural gas",
+        "coal",
+        "coffee",
+        "cocoa",
     )
+
+    def is_month(value: object) -> bool:
+        if pd.isna(value):
+            return False
+        return bool(re.fullmatch(r"\\d{4}M\\d{2}", str(value).strip(), flags=re.IGNORECASE))
+
     for i in range(min(40, len(raw))):
+        row = raw.iloc[i].tolist()
         cells = [
-            str(value).strip().lower()
-            for value in raw.iloc[i].tolist()
-            if pd.notna(value)
+            str(value).strip().lower() if pd.notna(value) else ""
+            for value in row
         ]
-        values = " ".join(cells)
-        has_time_column = any(
+        has_time_label = any(
             cell in time_labels or cell.startswith(("date ", "period ", "month "))
             for cell in cells[:2]
         )
-        has_commodity_column = any(label in values for label in commodity_labels)
-        if has_time_column and has_commodity_column:
+        commodity_count = sum(
+            any(label in cell for label in commodity_labels)
+            for cell in cells[1:]
+        )
+
+        if has_time_label and commodity_count:
             return i
+
+        # Current Pink Sheet layout: blank first header cell, commodity names,
+        # optional units row, then monthly periods such as 1960M01.
+        if commodity_count >= 2:
+            for offset in range(1, 4):
+                next_row = i + offset
+                if next_row >= len(raw):
+                    break
+                if is_month(raw.iloc[next_row, 0]):
+                    return i
+
     raise ValueError(
         "Could not locate the monthly header row in World Bank Pink Sheet workbook. "
         f"Available first rows: {raw.head(8).fillna('').astype(str).values.tolist()}"
